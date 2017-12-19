@@ -15,12 +15,27 @@ using	std::string;
 
 using	NaiveChat::ServerSocket;
 
+void	connDetect(ServerSocket &soc)
+{
+}
+
+void	serverTerm(ServerSocket &soc)
+{
+	while (!cin.eof())
+	{
+		cout << "[]>"; cout.flush();
+		string s;
+		std::getline(cin, s);
+		if (s == "exit") break;
+	}
+}
+
 int	main()
 {
-	vector <thread> threads;
+	ServerDB::get_instance();
+	ServerSocket soc;
 	while (true)
 	{
-		ServerSocket soc;
 		cout << "Welcome to NaiveChat Server!" << endl;
 		cout << "Port: "; cout.flush();
 		int port;
@@ -37,13 +52,11 @@ int	main()
 			cout << "Failed." << endl;
 			continue;
 		}	else	cout << "Done." << endl;
-
-		while (true)
-		{
-			auto user_soc = std::make_shared<ServerSocket>();
-			if (soc.acceptconn(*user_soc))
-				threads.emplace_back(std::bind(NaiveChat::debug, user_soc));
-		}
 	}
+
+	thread	t(std::bind(connDetect, soc));
+	thread	m(std::bind(serverTerm, soc));
+	m.join();
+	t.terminate();
 	return 0;
 }
