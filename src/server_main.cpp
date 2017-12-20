@@ -1,5 +1,6 @@
 #include "ServerSocket.h"
 #include "ServerDB.h"
+#include "Pack.h"
 #include "Debug.h"
 #include <iostream>
 #include <string>
@@ -19,23 +20,34 @@ using	std::string;
 using	NaiveChat::ServerSocket;
 using	NaiveChat::ServerDB;
 using	NaiveChat::User;
+using	NaiveChat::Pack;
 
 void	userConn(std::shared_ptr<User> usr, std::shared_ptr<ServerSocket> soc)
 {
 	if (usr->status) usr->status->closeconn();
-	usr->status = soc;
+	usr->setsoc(soc);
 	soc->senddata("succeeded", 9);
-	char	buffer[ServerSocket::MAX_SIZE + 1];
+	Pack	p;
 	try
 	{
 		while (soc->isvalid())
 		{
-			soc->recvdata(buffer);
+			if (!soc->recvdata(&p)) break;
+			switch (p.op)
+			{
+				case Pack::OP_UPDATE:
+				break;
+				case Pack::OP_LOGOUT:
+					soc->closeconn();
+				break;
+				case Pack::OP_CPWD:
+					usr->cpwd(p.cpwd);
+				break;
+			}
 		}
 	}
 	catch (std::exception &e) {}
-	usr->status->closeconn();
-	usr->status = nullptr;
+	soc->closeconn();
 }
 
 void	connDetect(std::shared_ptr<ServerSocket> soc)
@@ -81,7 +93,8 @@ void	serverTerm(std::shared_ptr<ServerSocket> soc)
 		if (s == "exit") break;
 		if (s == "ls")
 		{
-			for (auto &&i: ServerDB::get_instance().listuser()) cout << i << endl;
+			for (auto &&i: ServerDB::get_instance().listuser())
+				cout << i.first << "(" << (i.second ? "Online" : "Offline") << ")" << endl;
 			continue;
 		}
 		if (s != "help") cout << "Unrecognized command." << endl;

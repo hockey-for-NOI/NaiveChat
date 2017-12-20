@@ -16,6 +16,7 @@ struct	User
 	std::string	name;
 	std::string	salted_passwd2;
 	std::shared_ptr <ServerSocket>	status;
+	std::mutex mtx;
 
 	static	std::string	salted(std::string const&);
 
@@ -23,10 +24,10 @@ struct	User
 		name(name), salted_passwd2(salted(salted_passwd1)), status(nullptr)
 	{}
 
-	inline	bool	login(std::string const& salted_passwd1) const
-	{return salted_passwd2 == salted(salted_passwd1);}
-
-	inline	void	cpwd(std::string const& salted_passwd1) {salted_passwd2 = salted(salted_passwd1);}
+	bool	login(std::string const& salted_passwd1);
+	void	cpwd(std::string const& salted_passwd1);
+	bool	isonline();
+	void	setsoc(std::shared_ptr <ServerSocket>);
 };
 
 class	ServerDB
@@ -35,7 +36,7 @@ public:
 	static	ServerDB&	get_instance();
 	std::shared_ptr<User>	regist(std::string const& name, std::string const& sp1);
 	std::shared_ptr<User>	login(std::string const& name, std::string const& sp1);
-	std::vector <std::string>	listuser();
+	std::vector < std::pair <std::string, bool> >	listuser();
 private:
 	ServerDB();
 	static	ServerDB*	m_instance;

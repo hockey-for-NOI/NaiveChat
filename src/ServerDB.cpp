@@ -14,6 +14,36 @@ std::string	User::salted(std::string const& raw)
 	return encrypted;
 }
 
+bool	User::login(std::string const& salted_passwd1)
+{
+	mtx.lock();
+	bool flag = (salted_passwd2 == salted(salted_passwd1));
+	mtx.unlock();
+	return flag;
+}
+
+void	User::cpwd(std::string const& salted_passwd1)
+{
+	mtx.lock();
+	salted_passwd2 = salted(salted_passwd1);
+	mtx.unlock();
+}
+
+bool	User::isonline()
+{
+	mtx.lock();
+	bool flag = status && status->isvalid();
+	mtx.unlock();
+	return flag;
+}
+
+void	User::setsoc(std::shared_ptr <ServerSocket> soc)
+{
+	mtx.lock();
+	status = soc;
+	mtx.unlock();
+}
+
 ServerDB&	ServerDB::get_instance()
 {
 	if (!m_instance) m_instance = new ServerDB();
@@ -50,11 +80,11 @@ std::shared_ptr <User> ServerDB::login(std::string const& name, std::string cons
 	return t;
 }
 
-std::vector <std::string>	ServerDB::listuser()
+std::vector < std::pair <std::string, bool> >	ServerDB::listuser()
 {
 	mtx.lock();
-	std::vector <std::string> result;
-	for (auto const& i: m_users) result.push_back(i.first);
+	std::vector < std::pair <std::string, bool> > result;
+	for (auto const& i: m_users) result.emplace_back(i.first, i.second->isonline());
 	mtx.unlock();
 	return result;
 }
