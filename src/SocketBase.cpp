@@ -13,7 +13,21 @@ SocketBase::SocketBase():
 
 SocketBase::~SocketBase()
 {
-	if (m_sid == -1) close(m_sid);
+	if (m_sid != -1) close(m_sid);
+}
+
+void	SocketBase::closeconn()
+{
+	if (m_sid != -1)
+	{
+		close(m_sid);
+		m_sid = -1;
+	}
+}
+
+bool	SocketBase::isvalid() const
+{
+	return m_sid != -1;
 }
 
 bool	SocketBase::senddata(void const* ptr, size_t size) const

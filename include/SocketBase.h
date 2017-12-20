@@ -23,6 +23,9 @@ public:
 	template<typename T>
 	inline	size_t	recvobj(T& obj) const {return recvdata(&obj);}
 
+	void	closeconn();
+	bool	isvalid() const;
+
 protected:
 	SocketBase();
 	virtual	~SocketBase();
