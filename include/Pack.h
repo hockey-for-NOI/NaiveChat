@@ -1,4 +1,5 @@
 #pragma once
+#include "SocketBase.h"
 
 namespace	NaiveChat
 {
@@ -13,7 +14,7 @@ struct	Pack
 
 	union
 	{
-		char	pad[ServerSocket::MAX_SIZE-1];
+		char	pad[SocketBase::MAX_SIZE-1];
 		char	cpwd[300];
 	};
 };

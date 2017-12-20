@@ -110,6 +110,7 @@ int	main()
 	auto soc = std::make_shared<ServerSocket>();
 	while (true)
 	{
+		soc = std::make_shared<ServerSocket>();
 		cout << "Welcome to NaiveChat Server!" << endl;
 		cout << "Port: "; cout.flush();
 		int port;

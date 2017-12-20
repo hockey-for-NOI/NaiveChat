@@ -9,7 +9,7 @@ SocketBase::SocketBase():
 	if ((m_sid = socket(AF_INET, SOCK_STREAM, 0)) == -1) throw 0;
 	int tmp;
 	if (setsockopt(m_sid, SOL_SOCKET, SO_REUSEADDR, (char*)&tmp, 4) == -1) throw 0;
-	timeval timeout{30,0};
+	timeval timeout{86400,0};
 	if (setsockopt(m_sid, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(timeval)) == -1) throw 0;	
 	if (setsockopt(m_sid, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeval)) == -1) throw 0;	
 }
