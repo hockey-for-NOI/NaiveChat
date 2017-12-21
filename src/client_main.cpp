@@ -115,7 +115,7 @@ int	main()
 			cout << "Success." << endl;
 			continue;
 		}
-		if (s == "list")
+		if (s == "ls")
 		{
 			Pack p;
 			p.op = Pack::OP_LISTFRIEND;
@@ -136,7 +136,7 @@ int	main()
 		cout << "cpwd\tChange password." << endl;
 		cout << "search\tList online user." << endl;
 		cout << "add\tAdd user as friend." << endl;
-		cout << "list\tList friends status." << endl;
+		cout << "ls\tList friends status." << endl;
 		cout << "exit\tQuit NaiveChat." << endl;
 	}
 	return 0;
