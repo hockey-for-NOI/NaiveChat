@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <memory>
+#include <thread>
 
 using	std::cin;
 using	std::cout;
@@ -12,6 +13,53 @@ using	std::string;
 
 using	NaiveChat::ClientSocket;
 using	NaiveChat::Pack;
+
+void	chatterm(std::shared_ptr<ClientSocket> soc, std::string src, std::string dst)
+{
+	Pack p;
+	while (true)
+	{
+		cout << "[" << src << "](" << dst << ")>"; cout.flush();
+		std::string s;
+		cin >> s;
+		if (s == "exit")
+		{
+			p.op = Pack::OP_STOPCHAT;
+			if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			break;
+		}
+		if (s == "sendmsg")
+		{
+			std::getline(cin, s);
+			if (s.length() > ClientSocket::MAX_SIZE - 2) {cout << "Message too long." << endl; continue;}
+			p.op = Pack::OP_CHATMSG;
+			strcpy(p.data, s.c_str());
+			if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			continue;
+		}
+		if (s != "help") cout << "Unrecognized command." << endl;
+		cout << "help\tShow this message." << endl;
+		cout << "exit\tQuit NaiveChat." << endl;
+	}
+}
+
+void	chatrecv(std::shared_ptr<ClientSocket> soc, std::string src)
+{
+	Pack p;
+	while (true)
+	{
+		if (!soc->recvobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+		switch (p.op)
+		{
+			case Pack::OP_STOPCHAT:
+				return;
+			break;
+			case Pack::OP_CHATMSG:
+				cout << endl << src << ": " << p.data << endl;
+			break;
+		}
+	}
+}
 
 int	main()
 {
@@ -45,11 +93,11 @@ int	main()
 			else if (op == "L" or op == "l") p.op = Pack::OP_LOGIN;
 			else continue;
 			string name, passwd;
-			cout << "Username: ";
+			cout << "Username: "; cout.flush();
 			std::getline(cin, name);
 			if (name.length() < 1) {cout << "Invalid username length (<1)." << endl; break;}
 			if (name.length() > 20) {cout << "Invalid username length (>20)." << endl; break;}
-			cout << "Password: ";
+			cout << "Password: "; cout.flush();
 			std::getline(cin, passwd);
 			if (passwd.length() < 2) {cout << "Invalid password length (<2)." << endl; break;}
 			if (passwd.length() > 20) {cout << "Invalid password length (>20)." << endl; break;}
@@ -68,13 +116,12 @@ int	main()
 	{
 		cout << "[" << username << "]>"; cout.flush();
 		string s;
-		std::getline(cin, s);
+		cin >> s;
 		if (s == "exit") break;
 		if (s == "cpwd")
 		{
 			string passwd;
-			cout << "Password: ";
-			std::getline(cin, passwd);
+			cin >> passwd;
 			if (passwd.length() < 2) {cout << "Invalid password length (<2)." << endl; break;}
 			if (passwd.length() > 20) {cout << "Invalid password length (>20)." << endl; break;}
 			Pack p;
@@ -102,8 +149,7 @@ int	main()
 		if (s == "add")
 		{
 			string name;
-			cout << "FriendID: ";
-			std::getline(cin, name);
+			cin >> name;
 			if (name.length() < 1) {cout << "Invalid username length (<1)." << endl; break;}
 			if (name.length() > 20) {cout << "Invalid username length (>20)." << endl; break;}
 			Pack p;
@@ -131,12 +177,29 @@ int	main()
 			if (flag) {cout << "Connection unexpectly closed by remote host." << endl; break;}
 			continue;
 		}
+		if (s == "chat")
+		{
+			string name;
+			cin >> name;
+			Pack p;
+			p.op = Pack::OP_STARTCHAT;
+			strcpy(p.chat.name, name.c_str());
+			if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			if (!soc->recvobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			if (p.op != Pack::OP_REPLY || !p.reply) {cout << "Chat denied by server." << endl; continue;}
+			std::thread t1(std::bind(chatterm, soc, username, name));
+			std::thread t2(std::bind(chatrecv, soc, name));
+			t1.join();
+			t2.join();
+			continue;
+		}
 		if (s != "help") cout << "Unrecognized Command." << endl;
 		cout << "help\tShow this message." << endl;
-		cout << "cpwd\tChange password." << endl;
+		cout << "cpwd [newpass]\tChange password." << endl;
 		cout << "search\tList online user." << endl;
-		cout << "add\tAdd user as friend." << endl;
+		cout << "add [userid]\tAdd user as friend." << endl;
 		cout << "ls\tList friends status." << endl;
+		cout << "chat [userid]\tChat with user." << endl;
 		cout << "exit\tQuit NaiveChat." << endl;
 	}
 	return 0;

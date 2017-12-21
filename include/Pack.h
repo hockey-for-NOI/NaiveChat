@@ -19,10 +19,13 @@ struct	Pack
 	static	const	int	OP_ADD = 8;
 	static	const	int	OP_LISTFRIEND = 9;
 	static	const	int	OP_LISTFRIENDRES = 10;
+	static	const	int	OP_STARTCHAT = 11;
+	static	const	int	OP_STOPCHAT = 12;
+	static	const	int	OP_CHATMSG = 13;
 
 	union
 	{
-		char	pad[SocketBase::MAX_SIZE-1];
+		char	data[SocketBase::MAX_SIZE-1];
 		char	cpwd[300];
 		struct
 		{
@@ -45,6 +48,10 @@ struct	Pack
 			char	name[20][25];
 			bool	online[20];
 		}	listfriendres;
+		struct
+		{
+			char	name[25];
+		}	chat;
 	};
 };
 

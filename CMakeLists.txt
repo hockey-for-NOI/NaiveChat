@@ -13,6 +13,7 @@ list(APPEND SERVER_SRC_LIST ${SRC_LIST})
 list(APPEND CLIENT_SRC_LIST ${SRC_LIST})
 
 list(APPEND SERVER_SRC_LIST src/ServerSocket.cpp)
+list(APPEND SERVER_SRC_LIST src/User.cpp)
 list(APPEND SERVER_SRC_LIST src/ServerDB.cpp)
 
 list(APPEND CLIENT_SRC_LIST src/ClientSocket.cpp)

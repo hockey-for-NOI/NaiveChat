@@ -90,6 +90,22 @@ void	userConn(std::shared_ptr<User> usr, std::shared_ptr<ServerSocket> soc)
 					soc->sendobj(p);
 				}
 				break;
+				case Pack::OP_STARTCHAT:
+				{
+					auto u = ServerDB::get_instance().getuser(p.chat.name);
+					usr->chat(u);
+					p.op = Pack::OP_REPLY;
+					p.reply = (bool)u;
+					soc->sendobj(p);
+				}
+				break;
+				case Pack::OP_STOPCHAT:
+					usr->chat();
+					soc->sendobj(p);
+				break;
+				case Pack::OP_CHATMSG:
+					usr->forward(p);
+				break;
 			}
 		}
 	}
