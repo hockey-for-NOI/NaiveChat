@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ServerSocket.h"
+#include "Pack.h"
 
 #include <vector>
 #include <string>
@@ -17,6 +18,9 @@ struct	User
 	std::string	salted_passwd2;
 	std::shared_ptr <ServerSocket>	status;
 	std::mutex mtx;
+
+	std::vector < std::shared_ptr<User> > friends;
+	std::vector <Pack> buffer;
 
 	static	std::string	salted(std::string const&);
 

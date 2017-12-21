@@ -9,6 +9,7 @@
 #include <exception>
 #include <thread>
 #include <cstring>
+#include <cassert>
 
 using	std::cin;
 using	std::cout;
@@ -34,7 +35,7 @@ void	userConn(std::shared_ptr<User> usr, std::shared_ptr<ServerSocket> soc)
 		soc->sendobj(p);
 		while (soc->isvalid())
 		{
-			if (!soc->recvdata(&p)) break;
+			if (!soc->recvobj(p)) break;
 			switch (p.op)
 			{
 				case Pack::OP_UPDATE:
@@ -44,6 +45,20 @@ void	userConn(std::shared_ptr<User> usr, std::shared_ptr<ServerSocket> soc)
 				break;
 				case Pack::OP_CPWD:
 					usr->cpwd(p.cpwd);
+				break;
+				case Pack::OP_SEARCH:
+					p.op = Pack::OP_SEARCHRES;
+					p.searchres.len = 0;
+					for (auto &&i: ServerDB::get_instance().listuser()) if (i.second) 
+					{
+						strcpy(p.searchres.name[p.searchres.len++], i.first.c_str());
+						if (p.searchres.len == 20)
+						{
+							if (!soc->sendobj(p)) break;
+							p.searchres.len = 0;
+						}
+					}
+					if (p.searchres.len) soc->sendobj(p);
 				break;
 			}
 		}
@@ -64,6 +79,7 @@ void	connDetect(std::shared_ptr<ServerSocket> soc)
 			new_soc->recvobj(p);
 			if (p.op == Pack::OP_REGIST)
 			{
+				//cout << "REG" << endl;
 				auto tmp = ServerDB::get_instance().regist(p.namesp1.name, p.namesp1.passwd);
 				if (tmp) threads.emplace_back(std::bind(userConn, tmp, new_soc));
 				else
@@ -75,6 +91,7 @@ void	connDetect(std::shared_ptr<ServerSocket> soc)
 			}
 			else if (p.op == Pack::OP_LOGIN)
 			{
+				//cout << "LOG" << endl;
 				auto tmp = ServerDB::get_instance().login(p.namesp1.name, p.namesp1.passwd);
 				if (tmp) threads.emplace_back(std::bind(userConn, tmp, new_soc));
 				else
@@ -112,6 +129,7 @@ void	serverTerm(std::shared_ptr<ServerSocket> soc)
 
 int	main()
 {
+	assert(sizeof(Pack) == ServerSocket::MAX_SIZE);
 	ServerDB::get_instance();
 	auto soc = std::make_shared<ServerSocket>();
 	while (true)

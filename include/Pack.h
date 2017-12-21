@@ -14,6 +14,9 @@ struct	Pack
 	static	const	int	OP_REGIST = 3;
 	static	const	int	OP_LOGIN = 4;
 	static	const	int	OP_REPLY = 5;
+	static	const	int	OP_SEARCH = 6;
+	static	const	int	OP_SEARCHRES = 7;
+	static	const	int	OP_ADD = 8;
 
 	union
 	{
@@ -24,7 +27,16 @@ struct	Pack
 			char	name[25];
 			char	passwd[25];
 		}	namesp1;
-		bool	reply;
+		char	reply;
+		struct
+		{
+			char	name[20][25];
+			char	len, hasnext;
+		}	searchres;
+		struct
+		{
+			char	name[25];
+		}	addfriend;
 	};
 };
 

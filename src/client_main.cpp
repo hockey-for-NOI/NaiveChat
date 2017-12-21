@@ -55,10 +55,11 @@ int	main()
 			if (passwd.length() > 20) {cout << "Invalid password length (>20)." << endl; break;}
 			strcpy(p.namesp1.name, name.c_str());
 			strcpy(p.namesp1.passwd, passwd.c_str());
-			if (!soc->sendobj(p)) break;
+			if (!soc->sendobj(p)) {cout << "Connection Failed." << endl; break;}
 			if (!soc->recvobj(p)) {cout << "Connection Failed." << endl; break;}
 			if (p.op != Pack::OP_REPLY) {cout << "Unknown reply type." << endl; break;}
 			if (!p.reply) {cout << "Authentification Failed." << endl; break;}
+			cout << "Success!" << endl;
 			flag = 1; username = name; break;
 		}
 		if (flag) break;
@@ -81,6 +82,21 @@ int	main()
 			p.cpwd[passwd.length()] = 0;
 			memcpy(p.cpwd, passwd.c_str(), passwd.length());
 			if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			continue;
+		}
+		if (s == "search") 
+		{
+			Pack p;
+			p.op = Pack::OP_SEARCH;
+			if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			bool flag = false;
+			do
+			{
+				if (!soc->recvobj(p)) {flag = true; break;}
+				for (char i=0; i<p.searchres.len && i < 20; i++)
+					cout << p.searchres.name[i] << endl;
+			}	while (p.searchres.hasnext);
+			if (flag) {cout << "Connection unexpectly closed by remote host." << endl; break;}
 			continue;
 		}
 		if (s != "help") cout << "Unrecognized Command." << endl;
