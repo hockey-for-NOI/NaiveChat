@@ -17,6 +17,8 @@ struct	Pack
 	static	const	int	OP_SEARCH = 6;
 	static	const	int	OP_SEARCHRES = 7;
 	static	const	int	OP_ADD = 8;
+	static	const	int	OP_LISTFRIEND = 9;
+	static	const	int	OP_LISTFRIENDRES = 10;
 
 	union
 	{
@@ -30,13 +32,19 @@ struct	Pack
 		char	reply;
 		struct
 		{
-			char	name[20][25];
 			char	len, hasnext;
+			char	name[20][25];
 		}	searchres;
 		struct
 		{
 			char	name[25];
 		}	addfriend;
+		struct
+		{
+			char	len, hasnext;
+			char	name[20][25];
+			bool	online[20];
+		}	listfriendres;
 	};
 };
 

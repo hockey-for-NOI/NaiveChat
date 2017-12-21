@@ -44,6 +44,34 @@ void	User::setsoc(std::shared_ptr <ServerSocket> soc)
 	mtx.unlock();
 }
 
+void	User::closeconn()
+{
+	mtx.lock();
+	if (status) status->closeconn();
+	status = nullptr;
+	mtx.unlock();
+}
+
+bool	User::add(std::string const& name, std::shared_ptr<User> u)
+{
+	mtx.lock();
+	bool	flag = true;
+	if (friends.count(name)) flag = false;
+	else friends[name] = u;
+	mtx.unlock();
+	return flag;
+}
+
+std::vector < std::pair <std::string, bool> >	User::listfriend()
+{
+	mtx.lock();
+	std::vector < std::pair <std::string, std::shared_ptr<User> > > tmp(friends.begin(), friends.end());
+	mtx.unlock();
+	std::vector < std::pair <std::string, bool> > res;
+	for (auto &i: tmp) res.emplace_back(i.first, i.second->isonline());
+	return res;
+}
+
 ServerDB&	ServerDB::get_instance()
 {
 	if (!m_instance) m_instance = new ServerDB();
@@ -87,6 +115,15 @@ std::vector < std::pair <std::string, bool> >	ServerDB::listuser()
 	for (auto const& i: m_users) result.emplace_back(i.first, i.second->isonline());
 	mtx.unlock();
 	return result;
+}
+
+std::shared_ptr<User>	ServerDB::getuser(std::string name)
+{
+	mtx.lock();
+	std::shared_ptr<User> res = nullptr;
+	if (m_users.count(name)) res = m_users[name];
+	mtx.unlock();
+	return res;
 }
 
 }	// end namespace NaiveChat

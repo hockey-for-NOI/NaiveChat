@@ -25,7 +25,7 @@ using	NaiveChat::Pack;
 
 void	userConn(std::shared_ptr<User> usr, std::shared_ptr<ServerSocket> soc)
 {
-	if (usr->status) usr->status->closeconn();
+	usr->closeconn();
 	usr->setsoc(soc);
 	Pack	p;
 	p.op = Pack::OP_REPLY;
@@ -54,11 +54,41 @@ void	userConn(std::shared_ptr<User> usr, std::shared_ptr<ServerSocket> soc)
 						strcpy(p.searchres.name[p.searchres.len++], i.first.c_str());
 						if (p.searchres.len == 20)
 						{
+							p.searchres.hasnext = true;
 							if (!soc->sendobj(p)) break;
 							p.searchres.len = 0;
 						}
 					}
-					if (p.searchres.len) soc->sendobj(p);
+					p.searchres.hasnext = false;
+					soc->sendobj(p);
+				break;
+				case Pack::OP_ADD:
+				{
+					p.op = Pack::OP_REPLY;
+					auto u = ServerDB::get_instance().getuser(p.addfriend.name);
+					p.reply = u && usr->add(p.addfriend.name, u);
+					soc->sendobj(p);
+				}
+				break;
+				case Pack::OP_LISTFRIEND:
+				{
+					p.op = Pack::OP_LISTFRIENDRES;
+					auto &tar = p.listfriendres;
+					tar.len = 0;
+					for (auto &&i: usr->listfriend()) 
+					{
+						tar.online[tar.len] = i.second;
+						strcpy(tar.name[tar.len++], i.first.c_str());
+						if (tar.len == 20)
+						{
+							tar.hasnext = true;
+							if (!soc->sendobj(p)) break;
+							tar.len = 0;
+						}
+					}
+					tar.hasnext = false;
+					soc->sendobj(p);
+				}
 				break;
 			}
 		}

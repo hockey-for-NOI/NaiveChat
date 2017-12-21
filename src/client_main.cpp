@@ -99,9 +99,44 @@ int	main()
 			if (flag) {cout << "Connection unexpectly closed by remote host." << endl; break;}
 			continue;
 		}
+		if (s == "add")
+		{
+			string name;
+			cout << "FriendID: ";
+			std::getline(cin, name);
+			if (name.length() < 1) {cout << "Invalid username length (<1)." << endl; break;}
+			if (name.length() > 20) {cout << "Invalid username length (>20)." << endl; break;}
+			Pack p;
+			p.op = Pack::OP_ADD;
+			strcpy(p.addfriend.name, name.c_str());
+			if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			if (!soc->recvobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			if (p.op != Pack::OP_REPLY or !p.reply) {cout << "Friend not found." << endl; continue;}
+			cout << "Success." << endl;
+			continue;
+		}
+		if (s == "list")
+		{
+			Pack p;
+			p.op = Pack::OP_LISTFRIEND;
+			if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			bool flag = false;
+			do
+			{
+				if (!soc->recvobj(p)) {flag = true; break;}
+				auto &tar = p.listfriendres;
+				for (char i=0; i<tar.len && i < 20; i++)
+					cout << tar.name[i] << "(" << (tar.online[i] ? "Online" : "Offline") << ")" << endl;
+			}	while (p.listfriendres.hasnext);
+			if (flag) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			continue;
+		}
 		if (s != "help") cout << "Unrecognized Command." << endl;
 		cout << "help\tShow this message." << endl;
 		cout << "cpwd\tChange password." << endl;
+		cout << "search\tList online user." << endl;
+		cout << "add\tAdd user as friend." << endl;
+		cout << "list\tList friends status." << endl;
 		cout << "exit\tQuit NaiveChat." << endl;
 	}
 	return 0;
