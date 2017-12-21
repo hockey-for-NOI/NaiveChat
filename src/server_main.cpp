@@ -26,10 +26,12 @@ void	userConn(std::shared_ptr<User> usr, std::shared_ptr<ServerSocket> soc)
 {
 	if (usr->status) usr->status->closeconn();
 	usr->setsoc(soc);
-	soc->senddata("succeeded", 9);
 	Pack	p;
+	p.op = Pack::OP_REPLY;
+	p.reply = true;
 	try
 	{
+		soc->sendobj(p);
 		while (soc->isvalid())
 		{
 			if (!soc->recvdata(&p)) break;
@@ -52,33 +54,37 @@ void	userConn(std::shared_ptr<User> usr, std::shared_ptr<ServerSocket> soc)
 
 void	connDetect(std::shared_ptr<ServerSocket> soc)
 {
-	char	buffer[ServerSocket::MAX_SIZE + 1];
+	Pack p;
 	std::vector <std::thread> threads;
 	while (true)
 	{
 		auto new_soc = std::make_shared<ServerSocket>();
 		if (soc->acceptconn(*new_soc))
 		{
-			memset(buffer, 0, sizeof(buffer));
-			new_soc->recvdata(buffer);
-			std::string op = buffer;
-			if (op != "regist" && op != "login") continue;
-			memset(buffer, 0, sizeof(buffer));
-			new_soc->recvdata(buffer);
-			std::string name = buffer;
-			memset(buffer, 0, sizeof(buffer));
-			new_soc->recvdata(buffer);
-			std::string sp1 = buffer;
-			if (op == "regist")
+			new_soc->recvobj(p);
+			if (p.op == Pack::OP_REGIST)
 			{
-				auto tmp = ServerDB::get_instance().regist(name, sp1);
+				auto tmp = ServerDB::get_instance().regist(p.namesp1.name, p.namesp1.passwd);
 				if (tmp) threads.emplace_back(std::bind(userConn, tmp, new_soc));
+				else
+				{
+					p.op = Pack::OP_REPLY;
+					p.reply = false;
+					new_soc->sendobj(p);
+				}
 			}
-			else if (op == "login")
+			else if (p.op == Pack::OP_LOGIN)
 			{
-				auto tmp = ServerDB::get_instance().login(name, sp1);
+				auto tmp = ServerDB::get_instance().login(p.namesp1.name, p.namesp1.passwd);
 				if (tmp) threads.emplace_back(std::bind(userConn, tmp, new_soc));
+				else
+				{
+					p.op = Pack::OP_REPLY;
+					p.reply = false;
+					new_soc->sendobj(p);
+				}
 			}
+			else continue;
 		}
 	}
 }

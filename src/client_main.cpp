@@ -40,14 +40,9 @@ int	main()
 			cout << "Register(R)/Login(l)?";
 			string op;
 			std::getline(cin, op);
-			if (op == "R" or op == "r")
-			{
-				if (!soc->senddata("regist", 6)) break;
-			}
-			else if (op == "L" or op == "l")
-			{
-				if (!soc->senddata("login", 5)) break;
-			}
+			Pack p;
+			if (op == "" or op == "R" or op == "r") p.op = Pack::OP_REGIST;
+			else if (op == "L" or op == "l") p.op = Pack::OP_LOGIN;
 			else continue;
 			string name, passwd;
 			cout << "Username: ";
@@ -58,12 +53,12 @@ int	main()
 			std::getline(cin, passwd);
 			if (passwd.length() < 2) {cout << "Invalid password length (<2)." << endl; break;}
 			if (passwd.length() > 20) {cout << "Invalid password length (>20)." << endl; break;}
-			if (!soc->senddata(name.c_str(), name.length())) break;
-			if (!soc->senddata(passwd.c_str(), passwd.length())) break;
-			char res[ClientSocket::MAX_SIZE + 1];
-			memset(res, 0, sizeof(res));
-			if (!soc->recvdata(res)) {cout << "Failed." << endl; break;}
-			if (std::string(res) != "succeeded") {cout << "Failed." << endl; break;}
+			strcpy(p.namesp1.name, name.c_str());
+			strcpy(p.namesp1.passwd, passwd.c_str());
+			if (!soc->sendobj(p)) break;
+			if (!soc->recvobj(p)) {cout << "Connection Failed." << endl; break;}
+			if (p.op != Pack::OP_REPLY) {cout << "Unknown reply type." << endl; break;}
+			if (!p.reply) {cout << "Authentification Failed." << endl; break;}
 			flag = 1; username = name; break;
 		}
 		if (flag) break;
