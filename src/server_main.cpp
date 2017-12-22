@@ -106,6 +106,15 @@ void	userConn(std::shared_ptr<User> usr, std::shared_ptr<ServerSocket> soc)
 				case Pack::OP_CHATMSG:
 					usr->forward(p);
 				break;
+				case Pack::OP_RECVMSG:
+					if (usr->recvmsg(p)) soc->sendobj(p);
+					else
+					{
+						p.op = Pack::OP_REPLY;
+						p.reply = false;
+						soc->sendobj(p);
+					}
+				break;
 			}
 		}
 	}

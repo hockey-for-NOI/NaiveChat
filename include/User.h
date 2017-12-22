@@ -7,6 +7,7 @@
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <list>
 #include <vector>
 #include <string>
 
@@ -24,7 +25,8 @@ private:
 	std::unordered_map <std::string, std::shared_ptr<User>> friends;
 	std::shared_ptr<User> chat_target;
 	std::shared_ptr<std::thread> fwd;
-	std::unordered_map <std::string, std::vector<Pack> > chatbuf, filebuf;
+	std::unordered_map <std::string, std::list<Pack> > chatbuf, filebuf;
+	std::list <std::string> chatseq, fileseq;
 
 	static	std::string	salted(std::string const&);
 
@@ -45,6 +47,8 @@ public:
 	void	recvchatpack(std::string const& src, Pack const& p);
 	void	recvfilepack(std::string const& src, Pack const& p);
 	void	forward(Pack const& p);
+	bool	recvmsg(Pack &p);
+	bool	recvfile(Pack &p);
 };
 
 }	// end namespace NaiveChat

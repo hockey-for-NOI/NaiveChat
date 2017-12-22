@@ -8,20 +8,21 @@ struct	Pack
 {
 	char	op;
 
-	static	const	int	OP_UPDATE = 0;
-	static	const	int	OP_LOGOUT = 1;
-	static	const	int	OP_CPWD = 2;
-	static	const	int	OP_REGIST = 3;
-	static	const	int	OP_LOGIN = 4;
-	static	const	int	OP_REPLY = 5;
-	static	const	int	OP_SEARCH = 6;
-	static	const	int	OP_SEARCHRES = 7;
-	static	const	int	OP_ADD = 8;
-	static	const	int	OP_LISTFRIEND = 9;
-	static	const	int	OP_LISTFRIENDRES = 10;
-	static	const	int	OP_STARTCHAT = 11;
-	static	const	int	OP_STOPCHAT = 12;
-	static	const	int	OP_CHATMSG = 13;
+	static	const	char	OP_UPDATE = 0;
+	static	const	char	OP_LOGOUT = 1;
+	static	const	char	OP_CPWD = 2;
+	static	const	char	OP_REGIST = 3;
+	static	const	char	OP_LOGIN = 4;
+	static	const	char	OP_REPLY = 5;
+	static	const	char	OP_SEARCH = 6;
+	static	const	char	OP_SEARCHRES = 7;
+	static	const	char	OP_ADD = 8;
+	static	const	char	OP_LISTFRIEND = 9;
+	static	const	char	OP_LISTFRIENDRES = 10;
+	static	const	char	OP_STARTCHAT = 11;
+	static	const	char	OP_STOPCHAT = 12;
+	static	const	char	OP_CHATMSG = 13;
+	static	const	char	OP_RECVMSG = 14;
 
 	union
 	{
@@ -52,6 +53,11 @@ struct	Pack
 		{
 			char	name[25];
 		}	chat;
+		struct
+		{
+			char	name[25];
+			char	data[500];
+		}	msg;
 	};
 };
 

@@ -33,12 +33,14 @@ void	chatterm(std::shared_ptr<ClientSocket> soc, std::string src, std::string ds
 			std::getline(cin, s);
 			if (s.length() > ClientSocket::MAX_SIZE - 2) {cout << "Message too long." << endl; continue;}
 			p.op = Pack::OP_CHATMSG;
-			strcpy(p.data, s.c_str());
+			strcpy(p.msg.name, src.c_str());
+			strcpy(p.msg.data, s.c_str());
 			if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
 			continue;
 		}
 		if (s != "help") cout << "Unrecognized command." << endl;
 		cout << "help\tShow this message." << endl;
+		cout << "sendmsg [MESSAGE]\tSend a message." << endl;
 		cout << "exit\tQuit NaiveChat." << endl;
 	}
 }
@@ -55,7 +57,7 @@ void	chatrecv(std::shared_ptr<ClientSocket> soc, std::string src)
 				return;
 			break;
 			case Pack::OP_CHATMSG:
-				cout << endl << src << ": " << p.data << endl;
+				cout << endl << p.msg.name << ": " << p.msg.data << endl;
 			break;
 		}
 	}
@@ -193,6 +195,17 @@ int	main()
 			t2.join();
 			continue;
 		}
+		if (s == "recvmsg")
+		{
+			Pack p;
+			p.op = Pack::OP_RECVMSG;
+			if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			if (!soc->recvobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			if (p.op == Pack::OP_CHATMSG)
+				cout << endl << p.msg.name << ": " << p.msg.data << endl;
+			else cout << "No new messages." << endl;
+			continue;
+		}
 		if (s != "help") cout << "Unrecognized Command." << endl;
 		cout << "help\tShow this message." << endl;
 		cout << "cpwd [newpass]\tChange password." << endl;
@@ -200,6 +213,7 @@ int	main()
 		cout << "add [userid]\tAdd user as friend." << endl;
 		cout << "ls\tList friends status." << endl;
 		cout << "chat [userid]\tChat with user." << endl;
+		cout << "recvmsg\tReceive most recent message." << endl;
 		cout << "exit\tQuit NaiveChat." << endl;
 	}
 	return 0;

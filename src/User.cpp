@@ -72,9 +72,10 @@ void	User::chat(std::shared_ptr<User> u)
 		while (chat_target && chat_target->getname() == tar)
 		{
 			mtx.lock();
-			std::vector<Pack> tmp;
+			std::list<Pack> tmp;
 			tmp.swap(chatbuf[tar]);
 			for (auto &i: tmp) status->sendobj(i); 
+			chatseq.remove(tar);
 			mtx.unlock();
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
@@ -86,6 +87,7 @@ void	User::recvchatpack(std::string const& src, Pack const& p)
 {
 	mtx.lock();
 	chatbuf[src].push_back(p);
+	chatseq.push_back(src);
 	mtx.unlock();
 }
 
@@ -93,7 +95,26 @@ void	User::recvfilepack(std::string const& src, Pack const& p)
 {
 	mtx.lock();
 	filebuf[src].push_back(p);
+	fileseq.push_back(src);
 	mtx.unlock();
+}
+
+bool	User::recvmsg(Pack &p)
+{
+	std::shared_ptr<std::string> tmp;
+	mtx.lock();
+	if (!chatseq.empty())
+	{
+		tmp = std::make_shared<std::string>(std::move(chatseq.front()));
+		chatseq.pop_front();
+	}
+	if (tmp)
+	{
+		p = chatbuf[*tmp].front();
+		chatbuf[*tmp].pop_front();
+	};
+	mtx.unlock();
+	return (bool)tmp;
 }
 
 bool	User::add(std::string const& name, std::shared_ptr<User> u)
