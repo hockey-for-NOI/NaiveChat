@@ -115,6 +115,29 @@ void	userConn(std::shared_ptr<User> usr, std::shared_ptr<ServerSocket> soc)
 						soc->sendobj(p);
 					}
 				break;
+				case Pack::OP_FILEINFO:
+					usr->forwardfileinfo(p);
+				break;
+				case Pack::OP_FILEDATA:
+					usr->forwardfilepack(p);
+				break;
+				case Pack::OP_RECVFILE:
+				{
+					auto tmp = usr->recvfile();
+					if (tmp.second.size())
+					{
+						soc->sendobj(tmp.first);
+						for (auto &i: tmp.second) soc->sendobj(i);
+						usr->recvfin();
+					}
+					else
+					{
+						p.op = Pack::OP_REPLY;
+						p.reply = false;
+						soc->sendobj(p);
+					}
+				}
+				break;
 			}
 		}
 	}

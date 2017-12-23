@@ -23,6 +23,10 @@ struct	Pack
 	static	const	char	OP_STOPCHAT = 12;
 	static	const	char	OP_CHATMSG = 13;
 	static	const	char	OP_RECVMSG = 14;
+	static	const	char	OP_FILEINFO = 15;
+	static	const	char	OP_FILEDATA = 16;
+	static	const	char	OP_RECVFILE = 17;
+	static	const	char	OP_FILEINFOC = 18;
 
 	union
 	{
@@ -58,6 +62,17 @@ struct	Pack
 			char	name[25];
 			char	data[500];
 		}	msg;
+		struct
+		{
+			char	username[25];
+			char	filename[500];
+		}	fileinfo;
+		struct
+		{
+			bool	hasnext;
+			char	len[2];
+			char	data[512];
+		}	filedata;
 	};
 };
 

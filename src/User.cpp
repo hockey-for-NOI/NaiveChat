@@ -76,6 +76,7 @@ void	User::chat(std::shared_ptr<User> u)
 			tmp.swap(chatbuf[tar]);
 			for (auto &i: tmp) status->sendobj(i); 
 			chatseq.remove(tar);
+			tmp.clear();
 			mtx.unlock();
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
@@ -91,12 +92,30 @@ void	User::recvchatpack(std::string const& src, Pack const& p)
 	mtx.unlock();
 }
 
-void	User::recvfilepack(std::string const& src, Pack const& p)
+void	User::recvfileinfo(std::string const& src, Pack const& p)
 {
 	mtx.lock();
-	filebuf[src].push_back(p);
-	fileseq.push_back(src);
+	filebuf[src].emplace_back(p, std::vector<Pack>());
 	mtx.unlock();
+}
+
+void	User::recvfilepack(std::string const& src, Pack const& p)
+{
+	std::shared_ptr<Pack> o;
+	mtx.lock();
+	filebuf[src].back().second.push_back(p);
+	if (!p.filedata.hasnext)
+	{
+		fileseq.push_back(src);
+		o = std::make_shared<Pack>(filebuf[src].back().first);
+	}
+	mtx.unlock();
+	if (o)
+	{
+		Pack oo = *o;
+		oo.op = Pack::OP_FILEINFOC;
+		recvchatpack(src, oo);
+	}
 }
 
 bool	User::recvmsg(Pack &p)
@@ -144,6 +163,66 @@ void	User::forward(Pack const& p)
 	auto tmp = chat_target;
 	mtx.unlock();
 	chat_target->recvchatpack(tsrc, p);
+}
+
+void	User::forwardfileinfo(Pack const& p)
+{
+	mtx.lock();
+	auto tsrc = name;
+	auto tmp = chat_target;
+	mtx.unlock();
+	chat_target->recvfileinfo(tsrc, p);
+}
+
+void	User::forwardfilepack(Pack const& p)
+{
+	mtx.lock();
+	auto tsrc = name;
+	auto tmp = chat_target;
+	mtx.unlock();
+	chat_target->recvfilepack(tsrc, p);
+}
+
+std::pair<Pack, std::vector <Pack> > User::recvfile()
+{
+	std::pair<Pack, std::vector<Pack> > ret;
+	std::string tar = "";
+	mtx.lock();
+	auto tmp = chat_target;
+	mtx.unlock();
+	if (tmp) tar = tmp->getname();
+	else
+	{
+		mtx.lock();
+		if (!fileseq.empty()) tar = fileseq.front();
+		mtx.unlock();
+	}
+	mtx.lock();
+	if (filebuf.count(tar) && !filebuf[tar].empty())
+		ret = filebuf[tar].front();
+	mtx.unlock();
+	return ret;
+}
+
+void	User::recvfin()
+{
+	std::string tar = "";
+	mtx.lock();
+	auto tmp = chat_target;
+	mtx.unlock();
+	if (tmp) tar = tmp->getname();
+	else
+	{
+		mtx.lock();
+		if (!fileseq.empty()) tar = fileseq.front();
+		mtx.unlock();
+	}
+	mtx.lock();
+	if (filebuf.count(tar) && !filebuf[tar].empty())
+		filebuf[tar].pop_front();
+	for (auto itr1 = fileseq.begin(); itr1 != fileseq.end(); itr1++)
+		if (*itr1 == tar) {fileseq.erase(itr1); break;}
+	mtx.unlock();
 }
 
 }	// end namespace NaiveChat

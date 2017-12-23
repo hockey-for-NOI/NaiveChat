@@ -25,7 +25,8 @@ private:
 	std::unordered_map <std::string, std::shared_ptr<User>> friends;
 	std::shared_ptr<User> chat_target;
 	std::shared_ptr<std::thread> fwd;
-	std::unordered_map <std::string, std::list<Pack> > chatbuf, filebuf;
+	std::unordered_map <std::string, std::list<Pack> > chatbuf;
+	std::unordered_map <std::string, std::list< std::pair<Pack, std::vector<Pack> > > > filebuf;
 	std::list <std::string> chatseq, fileseq;
 
 	static	std::string	salted(std::string const&);
@@ -45,10 +46,14 @@ public:
 	std::vector < std::pair <std::string, bool> >	listfriend();
 	void	chat(std::shared_ptr<User> u = nullptr);
 	void	recvchatpack(std::string const& src, Pack const& p);
+	void	recvfileinfo(std::string const& src, Pack const& p);
 	void	recvfilepack(std::string const& src, Pack const& p);
 	void	forward(Pack const& p);
+	void	forwardfileinfo(Pack const& p);
+	void	forwardfilepack(Pack const& p);
 	bool	recvmsg(Pack &p);
-	bool	recvfile(Pack &p);
+	std::pair<Pack, std::vector<Pack> >	recvfile();
+	void	recvfin();
 };
 
 }	// end namespace NaiveChat

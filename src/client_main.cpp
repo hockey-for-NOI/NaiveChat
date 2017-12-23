@@ -2,9 +2,13 @@
 #include "Pack.h"
 #include <cstring>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <memory>
 #include <thread>
+#include <chrono>
+#include <mutex>
+#include <algorithm>
 
 using	std::cin;
 using	std::cout;
@@ -14,11 +18,57 @@ using	std::string;
 using	NaiveChat::ClientSocket;
 using	NaiveChat::Pack;
 
-void	chatterm(std::shared_ptr<ClientSocket> soc, std::string src, std::string dst)
+void	filerecv(std::shared_ptr<ClientSocket> soc, std::string filename)
+{
+	Pack p;
+	std::ofstream f("~/Downloads/" + filename, std::ios::binary);
+	if (!f)
+	{
+		cout << "File access failed. Trying to save in /tmp instead." << endl;
+		f = std::ofstream("/tmp/" + filename, std::ios::binary);
+	}
+	do
+	{
+		cout << ">";
+		if (!soc->recvobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+		if (p.op != Pack::OP_FILEDATA) {cout << "File transmission interrupted." << endl; break;}
+		short	size;
+		memcpy(&size, p.filedata.len, sizeof(short));
+		if (f) f.write(p.filedata.data, size);
+	}	while (p.filedata.hasnext);
+	cout << endl << "File transmission finished." << endl;
+}
+
+void	filesend(std::shared_ptr<ClientSocket> soc, std::string filename)
+{
+	Pack p;
+	p.op = Pack::OP_FILEDATA;
+	std::ifstream f(filename, std::ios::binary);
+	if (!f) cout << "File not found." << endl;
+	while(true)
+	{
+		cout << ">";
+		short size = 0;
+		if (f)
+		{
+			f.read(p.filedata.data, 512);
+			size = f.gcount();
+		}
+		memcpy(p.filedata.len, &size, sizeof(short));
+		p.filedata.hasnext = (bool)f;
+		if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+		if (!f) break;
+	}
+	cout << endl << "File transmission finished." << endl;
+}
+
+
+void	chatterm(std::shared_ptr<ClientSocket> soc, std::string src, std::string dst, std::shared_ptr<std::mutex> mtx)
 {
 	Pack p;
 	while (true)
 	{
+		mtx->lock(); mtx->unlock();
 		cout << "[" << src << "](" << dst << ")>"; cout.flush();
 		std::string s;
 		cin >> s;
@@ -38,14 +88,35 @@ void	chatterm(std::shared_ptr<ClientSocket> soc, std::string src, std::string ds
 			if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
 			continue;
 		}
+		if (s == "sendfile")
+		{
+			cin >> s;
+			string cores(std::find_if(s.rbegin(), s.rend(), [](char ch){return ch == '/';}).base(), s.end());
+			if (cores.length() >= 500) {cout << "Filename too long." << endl; continue;}
+			p.op = Pack::OP_FILEINFO;
+			strcpy(p.fileinfo.username, src.c_str());
+			strcpy(p.fileinfo.filename, cores.c_str());
+			if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			filesend(soc, s);
+			continue;
+		}
+		if (s == "recvfile")
+		{
+			p.op = Pack::OP_RECVFILE;
+			if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			continue;
+		}
 		if (s != "help") cout << "Unrecognized command." << endl;
 		cout << "help\tShow this message." << endl;
 		cout << "sendmsg [MESSAGE]\tSend a message." << endl;
+		cout << "sendfile [FILENAME]\tSend a file." << endl;
+		cout << "recvfile [FILENAME]\tReceive the most recent file." << endl;
 		cout << "exit\tQuit NaiveChat." << endl;
 	}
 }
 
-void	chatrecv(std::shared_ptr<ClientSocket> soc, std::string src)
+void	chatrecv(std::shared_ptr<ClientSocket> soc, std::string src, std::shared_ptr<std::mutex> mtx)
 {
 	Pack p;
 	while (true)
@@ -58,6 +129,23 @@ void	chatrecv(std::shared_ptr<ClientSocket> soc, std::string src)
 			break;
 			case Pack::OP_CHATMSG:
 				cout << endl << p.msg.name << ": " << p.msg.data << endl;
+			break;
+			case Pack::OP_FILEINFOC:
+				cout << endl << "File from " << p.fileinfo.username << ": " << p.fileinfo.filename << endl;
+			break;
+			case Pack::OP_REPLY:
+				cout << endl << "No files available." << endl;
+			break;
+			case Pack::OP_FILEINFO:
+				mtx->lock();
+				if (p.op == Pack::OP_REPLY)
+					cout << endl << "No new files." << endl;
+				else
+				{
+					cout << endl << "File from " << p.fileinfo.username << ": " << p.fileinfo.filename << endl;
+					filerecv(soc, p.fileinfo.filename);
+				}
+				mtx->unlock();
 			break;
 		}
 	}
@@ -181,6 +269,7 @@ int	main()
 		}
 		if (s == "chat")
 		{
+			auto mtx = std::make_shared<std::mutex>();
 			string name;
 			cin >> name;
 			Pack p;
@@ -189,8 +278,8 @@ int	main()
 			if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
 			if (!soc->recvobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
 			if (p.op != Pack::OP_REPLY || !p.reply) {cout << "Chat denied by server." << endl; continue;}
-			std::thread t1(std::bind(chatterm, soc, username, name));
-			std::thread t2(std::bind(chatrecv, soc, name));
+			std::thread t1(std::bind(chatterm, soc, username, name, mtx));
+			std::thread t2(std::bind(chatrecv, soc, name, mtx));
 			t1.join();
 			t2.join();
 			continue;
@@ -206,6 +295,21 @@ int	main()
 			else cout << "No new messages." << endl;
 			continue;
 		}
+		if (s == "recvfile")
+		{
+			Pack p;
+			p.op = Pack::OP_RECVFILE;
+			if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			if (!soc->recvobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
+			if (p.op == Pack::OP_REPLY)
+				cout << endl << "No new files." << endl;
+			else
+			{
+				cout << endl << "File from " << p.fileinfo.username << ": " << p.fileinfo.filename << endl;
+				filerecv(soc, p.fileinfo.filename);
+			}
+			continue;
+		}
 		if (s != "help") cout << "Unrecognized Command." << endl;
 		cout << "help\tShow this message." << endl;
 		cout << "cpwd [newpass]\tChange password." << endl;
@@ -214,6 +318,7 @@ int	main()
 		cout << "ls\tList friends status." << endl;
 		cout << "chat [userid]\tChat with user." << endl;
 		cout << "recvmsg\tReceive most recent message." << endl;
+		cout << "recvfile\tReceive most recent file." << endl;
 		cout << "exit\tQuit NaiveChat." << endl;
 	}
 	return 0;
