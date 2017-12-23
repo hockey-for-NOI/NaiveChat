@@ -21,10 +21,11 @@ using	NaiveChat::Pack;
 void	filerecv(std::shared_ptr<ClientSocket> soc, std::string filename)
 {
 	Pack p;
-	std::ofstream f("~/Downloads/" + filename, std::ios::binary);
+	std::string fullname = std::string(getenv("HOME")) + "/Downloads/" + filename;
+	std::ofstream f(fullname, std::ios::binary);
 	if (!f)
 	{
-		cout << "File access failed. Trying to save in /tmp instead." << endl;
+		cout << "File " << fullname << " access failed. Trying to save in /tmp instead." << endl;
 		f = std::ofstream("/tmp/" + filename, std::ios::binary);
 	}
 	do
