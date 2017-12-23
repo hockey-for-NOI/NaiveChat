@@ -30,7 +30,7 @@ void	filerecv(std::shared_ptr<ClientSocket> soc, std::string filename)
 	}
 	do
 	{
-		cout << ">";
+		cout << ">"; cout.flush();
 		if (!soc->recvobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
 		if (p.op != Pack::OP_FILEDATA) {cout << "File transmission interrupted." << endl; break;}
 		short	size;
@@ -48,7 +48,7 @@ void	filesend(std::shared_ptr<ClientSocket> soc, std::string filename)
 	if (!f) cout << "File not found." << endl;
 	while(true)
 	{
-		cout << ">";
+		cout << ">"; cout.flush();
 		short size = 0;
 		if (f)
 		{
@@ -59,6 +59,7 @@ void	filesend(std::shared_ptr<ClientSocket> soc, std::string filename)
 		p.filedata.hasnext = (bool)f;
 		if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
 		if (!f) break;
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	cout << endl << "File transmission finished." << endl;
 }

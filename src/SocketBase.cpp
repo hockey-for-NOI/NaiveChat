@@ -12,6 +12,9 @@ SocketBase::SocketBase():
 	timeval timeout{86400,0};
 	if (setsockopt(m_sid, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(timeval)) == -1) throw 0;	
 	if (setsockopt(m_sid, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeval)) == -1) throw 0;	
+	tmp = 16777216;
+	if (setsockopt(m_sid, SOL_SOCKET, SO_SNDBUF, (char*)&tmp, sizeof(int)) == -1) throw 0;	
+	if (setsockopt(m_sid, SOL_SOCKET, SO_RCVBUF, (char*)&tmp, sizeof(int)) == -1) throw 0;	
 }
 
 SocketBase::~SocketBase()
