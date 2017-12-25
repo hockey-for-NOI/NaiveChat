@@ -167,7 +167,8 @@ int	main()
 		cout << "Server Port: "; cout.flush();
 		int port;
 		cin >> port;
-		std::getline(cin, host);
+		string tmp;
+		std::getline(cin, tmp);
 		cout << "Connecting..."; cout.flush();
 		if (!soc->conn(host.c_str(), port))
 		{

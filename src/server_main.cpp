@@ -229,7 +229,7 @@ int	main()
 			cout << "Failed." << endl;
 			continue;
 		}	else	cout << "Done." << endl;
-		cout << "Listeninging..."; cout.flush();
+		cout << "Listening..."; cout.flush();
 		if (!soc->listento())
 		{
 			cout << "Failed." << endl;
