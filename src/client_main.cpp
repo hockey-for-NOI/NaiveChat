@@ -60,7 +60,7 @@ void	filesend(std::shared_ptr<ClientSocket> soc, std::string filename)
 		p.filedata.hasnext = (bool)f;
 		if (!soc->sendobj(p)) {cout << "Connection unexpectly closed by remote host." << endl; break;}
 		if (!f) break;
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 	cout << endl << "File transmission finished." << endl;
 }

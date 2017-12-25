@@ -131,7 +131,7 @@ void	userConn(std::shared_ptr<User> usr, std::shared_ptr<ServerSocket> soc)
 						for (auto &i: tmp.second)
 						{
 							soc->sendobj(i);
-							std::this_thread::sleep_for(std::chrono::milliseconds(1));
+							std::this_thread::sleep_for(std::chrono::milliseconds(100));
 						}
 						usr->recvfin();
 					}
