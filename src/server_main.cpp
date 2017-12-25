@@ -10,6 +10,7 @@
 #include <thread>
 #include <cstring>
 #include <cassert>
+#include <functional>
 
 using	std::cin;
 using	std::cout;

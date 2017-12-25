@@ -9,6 +9,7 @@
 #include <chrono>
 #include <mutex>
 #include <algorithm>
+#include <functional>
 
 using	std::cin;
 using	std::cout;
